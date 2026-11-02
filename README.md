@@ -91,7 +91,7 @@ uv run pytest -q
 
 Tests use synthetic WSDL/SOAP payloads, not real dealer data. They cover the operation catalog, parameter serialization, precision, error handling, exports, stdio, HTTP and concurrent account separation. CI also builds and starts the Docker image.
 
-A real authenticated call has **not** been verified without a dedicated eDshop API account. A live smoke check should start with `getSellerInfo`; never use credentials for another product such as mPOHODA.
+A real authenticated `getProductList(onStock=true, limit=5)` call through the configured stdio MCP client succeeded on 2026-11-02. Other operations have synthetic contract coverage; this does not verify every operation against a live account. Never use credentials for another product such as mPOHODA.
 
 ## Sources and boundaries
 

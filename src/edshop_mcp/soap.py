@@ -9,24 +9,14 @@ from zeep import Client, Settings
 from zeep.helpers import serialize_object
 from zeep.transports import Transport
 
-MAX_RESPONSE_BYTES = 32 * 1024 * 1024
-
-
-class BoundedSession(Session):
+class SoapSession(Session):
     def request(self, method, url, **kwargs):
         kwargs.update(stream=True, allow_redirects=False)
         response = super().request(method, url, **kwargs)
         try:
             if 300 <= response.status_code < 400:
                 raise EdshopError('Upstream redirect refused.')
-            chunks, size = [], 0
-            for chunk in response.iter_content(65536):
-                size += len(chunk)
-                if size > MAX_RESPONSE_BYTES:
-                    raise EdshopError('SOAP response exceeds 32 MiB. Use an export operation instead.')
-                chunks.append(chunk)
-            response._content = b''.join(chunks)
-            response._content_consumed = True
+            response.content  # Buffer the complete body before closing; Zeep parses it afterwards.
             return response
         finally:
             response.close()
@@ -92,7 +82,7 @@ def call(method, arguments, auth):
     try:
         logging.getLogger('zeep').setLevel(logging.CRITICAL)
         logging.getLogger('zeep.transports').setLevel(logging.CRITICAL)
-        with BoundedSession() as session:
+        with SoapSession() as session:
             session.trust_env = False
             client = Client(WSDL, transport=Transport(session=session, timeout=20, operation_timeout=60),
                             settings=Settings(forbid_dtd=True, forbid_entities=True, forbid_external=True))

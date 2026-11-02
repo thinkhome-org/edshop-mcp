@@ -96,12 +96,29 @@ def test_library_usage_does_not_log_secrets(wire, caplog):
     assert 'never-log-this-password' not in caplog.text
 
 
-def test_response_size_limit(monkeypatch):
+def test_large_response_is_not_rejected(monkeypatch):
     import io
     from requests import Session
-    r = Response(); r.status_code=200; r.raw=io.BytesIO(b'x' * 100)
-    monkeypatch.setattr(Session,'request',lambda *a,**k:r)
-    monkeypatch.setattr(soap,'MAX_RESPONSE_BYTES',50)
-    with soap.BoundedSession() as session:
-        with pytest.raises(soap.EdshopError,match='export'):
-            session.get('https://example.invalid')
+    payload = b'x' * (32 * 1024 * 1024 + 1)
+    r = Response(); r.status_code = 200; r.raw = io.BytesIO(payload)
+    closed = []
+    monkeypatch.setattr(r, 'close', lambda: closed.append(True))
+    def request(self, method, url, **kwargs):
+        assert kwargs['allow_redirects'] is False
+        return r
+    monkeypatch.setattr(Session, 'request', request)
+    with soap.SoapSession() as session:
+        result = session.get('https://example.invalid')
+        assert result.content == payload
+    assert closed == [True]
+
+
+def test_redirect_is_refused_and_response_closed(monkeypatch):
+    import io
+    from requests import Session
+    r = Response(); r.status_code = 307; r.raw = io.BytesIO(b'')
+    monkeypatch.setattr(Session, 'request', lambda *a, **k: r)
+    with soap.SoapSession() as session:
+        with pytest.raises(soap.EdshopError, match='redirect refused'):
+            session.post('https://example.invalid')
+    assert r.raw.closed

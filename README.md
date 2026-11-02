@@ -80,7 +80,7 @@ Names and business parameters follow the official WSDL. Credentials never appear
 - Catalogue data is precomputed (documented refreshes twice daily, prices/availability hourly), not a live stock reservation.
 - Export tools return provider status and `isReady`, `url`, `fileName` within their original response structure. `isReady=false` means not ready. No automatic file download or polling occurs. Repeated exports can return already-generated data. Treat export URLs as private.
 - Encodings: `UTF-8`, `windows-1250`. Product transformations: `EDLINKOLDXML` / `XML`, `EDLINKOLDCSV` / `CSV`, `EDLINKXLS` / `XLS`; mismatched pairs are rejected. Invoice transformations: `INVOICEOLD`, `ISDOC_5` (5.3.1), `ISDOC_6` (6.0.1).
-- SOAP/application errors are sanitized; raw provider error text is not returned because it can contain secrets. Network timeouts are 20 seconds for WSDL and 60 seconds for an operation. No automatic retries. Responses over 32 MiB are rejected with an export recommendation; no silent truncation. Redirects are refused to avoid forwarding credentials.
+- SOAP/application errors are sanitized; raw provider error text is not returned because it can contain secrets. Network timeouts are 20 seconds for WSDL and 60 seconds for an operation. No automatic retries. No fixed response byte cap is imposed; full SOAP responses are loaded into memory before local pagination. Redirects are refused to avoid forwarding credentials.
 
 ## Development and verification
 

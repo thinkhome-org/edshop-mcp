@@ -3,6 +3,7 @@ import argparse
 import asyncio
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from datetime import date
 import logging
 import os
 
@@ -87,6 +88,21 @@ def create_server(mode='stdio'):
     logging.getLogger('mcp').setLevel(logging.CRITICAL)
     server = Server('edshop-mcp', version='0.1.0')
     catalog = {t.name: t for t in tools()}
+    try:
+        max_calls = int(os.getenv('EDSHOP_MAX_CONCURRENT_CALLS', '2'))
+        if max_calls < 1:
+            raise ValueError
+    except ValueError:
+        raise ValueError('EDSHOP_MAX_CONCURRENT_CALLS must be a positive integer.') from None
+    slots = asyncio.Semaphore(max_calls)
+    running = set()
+
+    def completed(task):
+        running.discard(task)
+        slots.release()
+        # A cancelled MCP request must not log an abandoned worker exception.
+        if not task.cancelled():
+            task.exception()
 
     @server.list_tools()
     async def list_tools():
@@ -101,11 +117,30 @@ def create_server(mode='stdio'):
                 jsonschema.validate(arguments, catalog[name].inputSchema)
             except jsonschema.ValidationError:
                 raise EdshopError('Invalid tool parameters. Consult the tool schema.') from None
+            if 'dateFrom' in arguments:
+                try:
+                    start = date.fromisoformat(arguments['dateFrom'])
+                    end = date.fromisoformat(arguments['dateTo']) if arguments['dateTo'] else None
+                    if start.isoformat() != arguments['dateFrom'] or (end and end.isoformat() != arguments['dateTo']):
+                        raise ValueError
+                    if end and end < start:
+                        raise ValueError
+                except ValueError:
+                    raise EdshopError('Dates must use YYYY-MM-DD; dateTo must be empty or on/after dateFrom.') from None
             if 'fileFormat' in arguments:
                 expected = {'EDLINKOLDXML': 'XML', 'EDLINKOLDCSV': 'CSV', 'EDLINKXLS': 'XLS'}[arguments['transformation']]
                 if arguments['fileFormat'] != expected:
                     raise EdshopError('fileFormat does not match transformation.')
-            return await asyncio.to_thread(soap.call, name, arguments, credentials(mode))
+            auth = credentials(mode)
+            if slots.locked():
+                raise EdshopError('Server busy. Retry after the active SOAP calls finish.')
+            await slots.acquire()
+            # No queue. Keep capacity occupied until the blocking worker really exits,
+            # even if its MCP caller disconnects or cancels the request.
+            task = asyncio.create_task(asyncio.to_thread(soap.call, name, arguments, auth))
+            running.add(task)
+            task.add_done_callback(completed)
+            return await asyncio.shield(task)
         except EdshopError as exc:
             return CallToolResult(isError=True, content=[TextContent(type='text', text=str(exc))])
         except Exception:

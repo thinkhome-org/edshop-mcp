@@ -1,0 +1,67 @@
+{
+  "getProductList": {
+    "onStock": "boolean"
+  },
+  "getProductListDownloadXML": {
+    "encoding": "string",
+    "onStock": "boolean"
+  },
+  "getProductListDownloadXMLWithTransform": {
+    "transformation": "string",
+    "encoding": "string",
+    "onStock": "boolean",
+    "fileFormat": "string"
+  },
+  "getProductListDownloadZIP": {
+    "encoding": "string",
+    "onStock": "boolean"
+  },
+  "getProductListDownloadZIPWithTransform": {
+    "transformation": "string",
+    "encoding": "string",
+    "onStock": "boolean",
+    "fileFormat": "string",
+    "soldItemsOnly": "boolean"
+  },
+  "getInvoiceDetailDownloadXMLWithTransform": {
+    "invoiceSymbol": "string",
+    "transformation": "string",
+    "encoding": "string"
+  },
+  "getInvoiceList": {
+    "dateFrom": "string",
+    "dateTo": "string"
+  },
+  "getInvoiceDetail": {
+    "invoiceSymbol": "string"
+  },
+  "getDeliveryList": {
+    "dateFrom": "string",
+    "dateTo": "string"
+  },
+  "getDeliveryDetail": {
+    "deliverySymbol": "string"
+  },
+  "getOrderDetail": {
+    "orderSymbol": "string"
+  },
+  "getOrderList": {
+    "dateFrom": "string",
+    "dateTo": "string"
+  },
+  "getExpeditionList": {
+    "dateFrom": "string",
+    "dateTo": "string"
+  },
+  "getClaimList": {
+    "dateFrom": "string",
+    "dateTo": "string"
+  },
+  "getExpeditionDetail": {
+    "expeditionSymbol": "string"
+  },
+  "getSellerInfo": {},
+  "getAuthTokenEshop": {
+    "idEshop": "int"
+  }
+}

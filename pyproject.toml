@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,7 +8,15 @@ version = "0.1.0"
 description = "MCP access to eD system Czech PUBLIC data exchange"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["mcp>=1.30,<2", "zeep>=4.3.3,<5", "uvicorn>=0.30,<1"]
+dependencies = [
+  "mcp>=1.30,<2", "zeep>=4.3.3,<5", "uvicorn>=0.30,<1",
+  "requests>=2.32,<3", "jsonschema>=4.20,<5", "starlette>=1,<2",
+]
+
+[project.urls]
+Repository = "https://github.com/thinkhome-org/edshop-mcp"
+Issues = "https://github.com/thinkhome-org/edshop-mcp/issues"
+Documentation = "https://github.com/thinkhome-org/edshop-mcp/blob/main/README.md"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "httpx>=0.28,<1"]

@@ -5,4 +5,10 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       EDSHOP_ALLOWED_HOSTS: ${EDSHOP_ALLOWED_HOSTS:-}
+      EDSHOP_MAX_CONCURRENT_CALLS: ${EDSHOP_MAX_CONCURRENT_CALLS:-2}
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 90s
     restart: unless-stopped

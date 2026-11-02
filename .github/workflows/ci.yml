@@ -1,22 +1,54 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          python-version: '3.12'
+          version: '0.12.9'
+          python-version: ${{ matrix.python }}
       - run: uv sync --extra test --locked
       - run: uv run pytest -q
-      - run: docker build -t edshop-mcp:test .
-      - name: Container HTTP smoke test
+      - name: Build and test installed distributions
+        if: matrix.python == '3.12'
         shell: bash
         run: |
-          docker run -d --name edshop-test -p 127.0.0.1:8000:8000 edshop-mcp:test
+          uv build --no-sources
+          uvx --from twine twine check dist/*
+          uv export --locked --no-dev --no-emit-project --output-file "$RUNNER_TEMP/runtime.txt" > /dev/null
+          uv venv "$RUNNER_TEMP/package"
+          uv pip install --python "$RUNNER_TEMP/package/bin/python" --require-hashes -r "$RUNNER_TEMP/runtime.txt"
+          uv pip install --python "$RUNNER_TEMP/package/bin/python" --no-deps dist/*.whl
+          "$RUNNER_TEMP/package/bin/python" tests/package_smoke.py
+      - name: Audit locked runtime dependencies
+        if: matrix.python == '3.12'
+        run: uvx pip-audit==2.10.1 --disable-pip --no-deps -r "$RUNNER_TEMP/runtime.txt"
+      - name: Build locked container
+        if: matrix.python == '3.12'
+        run: docker build -t edshop-mcp:test .
+      - name: Container HTTP smoke test
+        if: matrix.python == '3.12'
+        shell: bash
+        run: |
+          docker compose config --quiet
+          docker run -d --name edshop-test --read-only --cap-drop ALL --security-opt no-new-privileges -p 127.0.0.1:8000:8000 edshop-mcp:test
           trap 'docker logs edshop-test; docker rm -f edshop-test' EXIT
           for attempt in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/mcp || true)

@@ -106,6 +106,8 @@ Every request supplies the two API headers; each client may use a different deal
 | Invalid Host / HTTP 421 | Add the exact remote host (and port when present) to `EDSHOP_ALLOWED_HOSTS`. |
 | SOAP request failed / rejected | Upstream connectivity, API account status and rights; errors deliberately hide raw provider text. |
 | Tool timeout | Codex/Claude examples allow 120 seconds; increase the corresponding client limit if needed. |
+| Server busy | Wait for active SOAP calls to finish, then retry intentionally; see [capacity](operations.md#configuration). |
+| Invalid dates | Use real `YYYY-MM-DD` dates; `dateTo` may be empty or on/after `dateFrom`. |
 | Large result | Lower `limit` to reduce MCP output; the full SOAP response is still loaded into memory. Export is optional. |
 
 ## Verification evidence and limits

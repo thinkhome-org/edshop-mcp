@@ -1,4 +1,6 @@
 """Synthetic WSDL and responses: no dealer data or credentials required."""
+import json
+from pathlib import Path
 from xml.etree import ElementTree as ET
 from requests import Response, Timeout
 import pytest
@@ -6,10 +8,12 @@ from edshop_mcp import soap
 from edshop_mcp.server import OPERATIONS
 
 NS = 'urn:edshop-test'
+CONTRACT = json.loads((Path(__file__).parent / 'fixtures/public-contract.json').read_text())
 
 def wsdl():
     elements, messages, ops, bindings = [], [], [], []
-    for name, fields in OPERATIONS.items():
+    for name, contract_fields in CONTRACT.items():
+        fields = {key: {'type': {'int': 'integer'}.get(kind, kind)} for key, kind in contract_fields.items()}
         params = {'login': {'type':'string'}, 'password': {'type':'string'}, **fields}
         if name == 'getAuthTokenEshop':
             params.update(loginEshop={'type':'string'}, passwordEshop={'type':'string'})
@@ -122,3 +126,17 @@ def test_redirect_is_refused_and_response_closed(monkeypatch):
         with pytest.raises(soap.EdshopError, match='redirect refused'):
             session.post('https://example.invalid')
     assert r.raw.closed
+
+
+def test_operations_match_independent_public_wsdl_contract():
+    observed = {name: {key: {'integer': 'int'}.get(value['type'], value['type'])
+                       for key, value in fields.items()} for name, fields in OPERATIONS.items()}
+    assert observed == CONTRACT
+
+
+def test_unicode_and_xml_metacharacters_round_trip(wire):
+    value = 'Česká faktura & <123>'
+    soap.call('getInvoiceDetail', {'invoiceSymbol': value}, soap.Credentials('žluťoučký', 'secret<&'))
+    assert wire['requests'][0][1]['invoiceSymbol'] == value
+    assert wire['requests'][0][1]['login'] == 'žluťoučký'
+    assert wire['requests'][0][1]['password'] == 'secret<&'

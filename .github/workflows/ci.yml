@@ -1,0 +1,31 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --extra test --locked
+      - run: uv run pytest -q
+      - run: docker build -t edshop-mcp:test .
+      - name: Container HTTP smoke test
+        shell: bash
+        run: |
+          docker run -d --name edshop-test -p 127.0.0.1:8000:8000 edshop-mcp:test
+          trap 'docker logs edshop-test; docker rm -f edshop-test' EXIT
+          for attempt in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/mcp || true)
+            [ "$code" = 401 ] && break
+            sleep 1
+          done
+          test "$code" = 401
+          curl --fail -s http://127.0.0.1:8000/mcp \
+            -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+            -H 'X-Edshop-Login: synthetic-smoke-user' -H 'X-Edshop-Password: synthetic-smoke-password' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            | python -c 'import json,sys; assert json.load(sys.stdin)["result"]["serverInfo"]["name"] == "edshop-mcp"'

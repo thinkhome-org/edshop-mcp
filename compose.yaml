@@ -1,0 +1,8 @@
+services:
+  edshop-mcp:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      EDSHOP_ALLOWED_HOSTS: ${EDSHOP_ALLOWED_HOSTS:-}
+    restart: unless-stopped

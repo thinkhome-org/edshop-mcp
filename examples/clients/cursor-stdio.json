@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "edshop": {
+      "type": "stdio",
+      "command": "/ABSOLUTE/PATH/edshop-mcp/.venv/bin/edshop-mcp",
+      "args": ["--transport", "stdio"],
+      "env": {
+        "EDSHOP_LOGIN": "${env:EDSHOP_LOGIN}",
+        "EDSHOP_PASSWORD": "${env:EDSHOP_PASSWORD}"
+      }
+    }
+  }
+}

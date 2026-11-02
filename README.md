@@ -6,19 +6,16 @@ PUBLIC means the basic API variant, **not anonymous data access**. Obtain a dedi
 
 ## Install and run
 
-Python 3.12+:
+Start with the [client setup guide](docs/clients.md) for **Codex, Claude Code, Cursor and Claude Desktop**, including seven ready-to-edit stdio/HTTP configurations and credential handling.
 
 ```sh
-python -m venv .venv
-. .venv/bin/activate
-pip install '.[test]'
-export EDSHOP_LOGIN='your-api-login'
-# Read interactively so the password is not placed in shell history:
-read -rs EDSHOP_PASSWORD; export EDSHOP_PASSWORD
-edshop-mcp
+git clone https://github.com/thinkhome-org/edshop-mcp.git
+cd edshop-mcp
+uv sync --locked
+uv run edshop-mcp --help
 ```
 
-The default is stdio. Configure your MCP client to launch `.venv/bin/edshop-mcp` and provide `EDSHOP_LOGIN` and `EDSHOP_PASSWORD` in its protected environment settings. `.env` is **not automatically loaded**. Do not commit client configurations containing credentials.
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/); it provisions Python 3.12+. Alternatively install this checkout with Python 3.12+: `python -m pip install .`. The default transport is stdio. `.env` is not automatically loaded. Supply credentials through the client environment or the explicit private-file launcher in the guide.
 
 For `getAuthTokenEshop`, additionally provide `EDSHOP_ESHOP_LOGIN` and `EDSHOP_ESHOP_PASSWORD`; `idEshop` is an ordinary tool argument. The returned token is deliberately delivered to the requesting MCP client and is sensitive. It is **not OAuth**.
 

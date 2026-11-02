@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "edshop": {
+      "type": "http",
+      "url": "http://127.0.0.1:8000/mcp",
+      "headers": {
+        "X-Edshop-Login": "${EDSHOP_LOGIN:-}",
+        "X-Edshop-Password": "${EDSHOP_PASSWORD:-}"
+      },
+      "timeout": 120000
+    }
+  }
+}

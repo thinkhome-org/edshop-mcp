@@ -1,0 +1,5 @@
+[mcp_servers.edshop]
+command = "/ABSOLUTE/PATH/edshop-mcp/.venv/bin/edshop-mcp"
+args = ["--transport", "stdio"]
+env_vars = ["EDSHOP_LOGIN", "EDSHOP_PASSWORD", "EDSHOP_ESHOP_LOGIN", "EDSHOP_ESHOP_PASSWORD"]
+tool_timeout_sec = 120
